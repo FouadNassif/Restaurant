@@ -22,9 +22,9 @@ import {
   Stack,
   Chip,
   Checkbox,
-  Grid,
   FormControlLabel,
   CircularProgress,
+  Grid,
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, Remove as RemoveIcon, ShoppingCart as CartIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useCartStore } from '../../store/cartStore';
@@ -457,7 +457,6 @@ export default function CartPage() {
             item 
             xs={12} 
             md={8}
-            component="div"
           >
             <Box sx={{ mb: 4 }}>
               <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -718,7 +717,6 @@ export default function CartPage() {
             item 
             xs={12} 
             md={4}
-            component="div"
           >
             <MotionCard
               initial={{ opacity: 0, y: 20 }}
