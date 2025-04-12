@@ -36,6 +36,8 @@ import { useRouter } from 'next/navigation';
 import { useMenuStore } from '../../store/menuStore';
 import type { CartItem } from '../../store/cartStore';
 import type { MenuItem as MenuItemType } from '../../data/menu';
+import type { Theme } from '@mui/material/styles';
+import type { SxProps } from '@mui/system';
 
 interface CustomerInfo {
   name: string;
@@ -339,7 +341,7 @@ export default function CartPage() {
     if (!selectedItem || !selectedItem.isOfferItem || !selectedItem.offerItems) return;
 
     setSelectedItem(prev => {
-      if (!prev) return null;
+      if (!prev || !prev.offerItems) return null;
       const updatedOfferItems = prev.offerItems.map(oi => {
         if (oi.itemId === itemId) {
           const currentExcluded = oi.excludedIngredients || [];
@@ -355,11 +357,11 @@ export default function CartPage() {
   };
 
   const handleSaveOfferChanges = () => {
-    if (!selectedItem || !selectedItem.isOfferItem) return;
+    if (!selectedItem || !selectedItem.isOfferItem || !selectedItem.offerItems) return;
 
     // Create a new customization ID based on the changes
-    const newCustomizationId = `offer-${selectedItem.id}-${selectedItem.offerItems?.map(oi => 
-      `${oi.itemId}-${oi.excludedIngredients.join('-')}`
+    const newCustomizationId = `offer-${selectedItem.id}-${selectedItem.offerItems.map(oi => 
+      `${oi.itemId}-${(oi.excludedIngredients || []).sort().join('-')}`
     ).join('_')}`;
 
     // Remove the old item
@@ -448,341 +450,340 @@ export default function CartPage() {
   }
 
   return (
-    <Box sx={{ py: 6, minHeight: '100vh', bgcolor: 'grey.50' }}>
-      <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3 } }}>
-        <Stack spacing={4}>
-          <Box>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Shopping Cart
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              {items.length} {items.length === 1 ? 'item' : 'items'} in your cart
-            </Typography>
-          </Box>
-
-          <Grid container spacing={2}>
-            <Grid xs={12} md={6}>
-              <MotionCard
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                sx={{ mb: 3 }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <List disablePadding>
-                    {(() => {
-                      const groupedItems = items.reduce((acc, item) => {
-                        const key = item.customizationId || item.id.toString();
-                        if (!acc[key]) {
-                          acc[key] = {
-                            ...item,
-                            quantity: 0
-                          };
-                        }
-                        acc[key].quantity += item.quantity;
-                        return acc;
-                      }, {} as { [key: string]: CartItem });
-
-                      const mergedItems = Object.values(groupedItems);
-                      return mergedItems.map((item, index) => (
-                        <React.Fragment key={`${item.id}-${item.customizationId || index}`}>
-                          <ListItem
+    <Box sx={{ py: 12, minHeight: '100vh', bgcolor: 'grey.50' }}>
+      <Container maxWidth="lg">
+        <Grid container spacing={3}>
+          <Grid 
+            item 
+            xs={12} 
+            md={8}
+            component="div"
+          >
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Your Cart
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Review and modify your items
+              </Typography>
+            </Box>
+            
+            {/* Cart Items */}
+            <Stack spacing={2}>
+              {items.length === 0 ? (
+                <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  Your cart is empty
+                </Typography>
+              ) : (
+                items.map((item, index) => (
+                  <MotionCard
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    sx={{ mb: 3 }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <List disablePadding>
+                        <ListItem
+                          sx={{
+                            py: 2,
+                            px: 0,
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                              borderRadius: 1,
+                            }
+                          }}
+                        >
+                          <Paper
+                            elevation={0}
                             sx={{
-                              py: 2,
-                              px: 0,
+                              p: 2,
+                              borderRadius: 2,
+                              bgcolor: 'background.paper',
+                              border: '1px solid',
+                              borderColor: 'divider',
                               '&:hover': {
-                                bgcolor: 'action.hover',
-                                borderRadius: 1,
+                                borderColor: 'primary.main',
+                                transition: 'all 0.2s ease-in-out'
                               }
                             }}
                           >
-                            <Paper
-                              elevation={0}
-                              sx={{
-                                p: 2,
-                                borderRadius: 2,
-                                bgcolor: 'background.paper',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                '&:hover': {
-                                  borderColor: 'primary.main',
-                                  transition: 'all 0.2s ease-in-out'
-                                }
-                              }}
-                            >
-                              <Box sx={{ 
-                                display: 'flex', 
-                                width: '100%', 
-                                alignItems: 'center', 
-                                gap: 2, 
-                                flexDirection: { xs: 'column', sm: 'row' },
-                                position: 'relative'
-                              }}>
-                                <Box 
-                                  component="img"
-                                  src={item.image}
-                                  alt={item.name}
-                                  sx={{ 
-                                    width: { xs: '100%', sm: 100 }, 
-                                    height: { xs: 200, sm: 100 }, 
-                                    objectFit: 'cover',
-                                    borderRadius: 1
-                                  }}
-                                />
-                                <Box sx={{ flex: 1, width: '100%' }}>
-                                  <Box sx={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between',
-                                    alignItems: 'flex-start',
-                                    mb: 1
-                                  }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                                      {item.name}
-                                      {item.selectedSize && (
-                                        <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                                          (Size: {item.selectedSize})
-                                        </Typography>
-                                      )}
-                                      {item.selectedDrinkType && (
-                                        <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                                          ({item.selectedDrinkType})
-                                        </Typography>
-                                      )}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleEditOffer(item)}
-                                        sx={{ 
-                                          color: 'primary.main',
-                                          bgcolor: 'primary.light',
-                                          '&:hover': {
-                                            bgcolor: 'primary.main',
-                                            color: 'white'
-                                          }
-                                        }}
-                                      >
-                                        <EditIcon fontSize="small" />
-                                      </IconButton>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleRemoveItem(item.id, item.customizationId)}
-                                        sx={{ 
-                                          color: 'error.main',
-                                          bgcolor: 'error.light',
-                                          '&:hover': {
-                                            bgcolor: 'error.main',
-                                            color: 'white'
-                                          }
-                                        }}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Box>
-                                  </Box>
-                                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                                    ${item.price.toFixed(2)} each
-                                  </Typography>
-                                  
-                                  <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                      {item.isOfferItem ? 'Offer Items:' : 'Ingredients:'}
-                                    </Typography>
-                                    {item.isOfferItem ? (
-                                      <Stack spacing={2}>
-                                        {item.offerItems?.map((offerItem) => {
-                                          const menuItem = menuItems.find(i => i.id === offerItem.itemId);
-                                          if (!menuItem) return null;
-                                          const allIngredients = [...menuItem.requiredIngredients, ...menuItem.optionalIngredients];
-                                          return (
-                                            <Box key={offerItem.itemId}>
-                                              <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
-                                                {menuItem.name}
-                                              </Typography>
-                                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                                {allIngredients.map((ingredient, index) => (
-                                                  <Chip 
-                                                    key={`${menuItem.id}-${index}`}
-                                                    label={ingredient}
-                                                    size="small"
-                                                    color={offerItem.excludedIngredients?.includes(ingredient) ? "error" : "default"}
-                                                    variant={offerItem.excludedIngredients?.includes(ingredient) ? "outlined" : "filled"}
-                                                    sx={{
-                                                      '& .MuiChip-label': {
-                                                        color: offerItem.excludedIngredients?.includes(ingredient) ? 'error.main' : 'inherit'
-                                                      }
-                                                    }}
-                                                  />
-                                                ))}
-                                              </Stack>
-                                            </Box>
-                                          );
-                                        })}
-                                      </Stack>
-                                    ) : (
-                                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                        {item.requiredIngredients && item.requiredIngredients.length > 0 && (
-                                          <Box sx={{ mt: 1 }}>
-                                            <Typography variant="caption" color="text.secondary">
-                                              Required Ingredients:
-                                            </Typography>
-                                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                              {item.requiredIngredients.map((ingredient, index) => (
-                                                <Chip
-                                                  key={`${item.id}-required-${index}`}
-                                                  label={ingredient}
-                                                  size="small"
-                                                  sx={{ 
-                                                    bgcolor: item.excludedIngredients?.includes(ingredient) ? 'error.light' : 'grey.100',
-                                                    '& .MuiChip-label': {
-                                                      fontSize: '0.75rem',
-                                                      color: item.excludedIngredients?.includes(ingredient) ? 'error.main' : 'text.secondary'
-                                                    }
-                                                  }}
-                                                />
-                                              ))}
-                                            </Stack>
-                                          </Box>
-                                        )}
-                                        {item.optionalIngredients && item.optionalIngredients.length > 0 && (
-                                          <Box sx={{ mt: 1 }}>
-                                            <Typography variant="caption" color="text.secondary">
-                                              Optional Ingredients:
-                                            </Typography>
-                                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                              {item.optionalIngredients.map((ingredient, index) => (
-                                                <Chip
-                                                  key={`${item.id}-optional-${index}`}
-                                                  label={ingredient}
-                                                  size="small"
-                                                  sx={{ 
-                                                    bgcolor: item.excludedIngredients?.includes(ingredient) ? 'error.light' : 'grey.100',
-                                                    '& .MuiChip-label': {
-                                                      fontSize: '0.75rem',
-                                                      color: item.excludedIngredients?.includes(ingredient) ? 'error.main' : 'text.secondary'
-                                                    }
-                                                  }}
-                                                />
-                                              ))}
-                                            </Stack>
-                                          </Box>
-                                        )}
-                                      </Stack>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              width: '100%', 
+                              alignItems: 'center', 
+                              gap: 2, 
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              position: 'relative'
+                            }}>
+                              <Box 
+                                component="img"
+                                src={item.image}
+                                alt={item.name}
+                                sx={{ 
+                                  width: { xs: '100%', sm: 100 }, 
+                                  height: { xs: 200, sm: 100 }, 
+                                  objectFit: 'cover',
+                                  borderRadius: 1
+                                }}
+                              />
+                              <Box sx={{ flex: 1, width: '100%' }}>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  mb: 1
+                                }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                                    {item.name}
+                                    {item.selectedSize && (
+                                      <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                        (Size: {item.selectedSize})
+                                      </Typography>
                                     )}
+                                    {item.selectedDrinkType && (
+                                      <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                        ({item.selectedDrinkType})
+                                      </Typography>
+                                    )}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleEditOffer(item)}
+                                      sx={{ 
+                                        color: 'primary.main',
+                                        bgcolor: 'primary.light',
+                                        '&:hover': {
+                                          bgcolor: 'primary.main',
+                                          color: 'white'
+                                        }
+                                      }}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleRemoveItem(item.id, item.customizationId)}
+                                      sx={{ 
+                                        color: 'error.main',
+                                        bgcolor: 'error.light',
+                                        '&:hover': {
+                                          bgcolor: 'error.main',
+                                          color: 'white'
+                                        }
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
                                   </Box>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  ${item.price.toFixed(2)} each
+                                </Typography>
+                                
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    {item.isOfferItem ? 'Offer Items:' : 'Ingredients:'}
+                                  </Typography>
+                                  {item.isOfferItem ? (
+                                    <Stack spacing={2}>
+                                      {item.offerItems?.map((offerItem) => {
+                                        const menuItem = menuItems.find(i => i.id === offerItem.itemId);
+                                        if (!menuItem) return null;
+                                        const allIngredients = [...menuItem.requiredIngredients, ...menuItem.optionalIngredients];
+                                        return (
+                                          <Box key={offerItem.itemId}>
+                                            <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
+                                              {menuItem.name}
+                                            </Typography>
+                                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                              {allIngredients.map((ingredient, index) => (
+                                                <Chip 
+                                                  key={`${menuItem.id}-${index}`}
+                                                  label={ingredient}
+                                                  size="small"
+                                                  color={offerItem.excludedIngredients?.includes(ingredient) ? "error" : "default"}
+                                                  variant={offerItem.excludedIngredients?.includes(ingredient) ? "outlined" : "filled"}
+                                                  sx={{
+                                                    '& .MuiChip-label': {
+                                                      color: offerItem.excludedIngredients?.includes(ingredient) ? 'error.main' : 'inherit'
+                                                    }
+                                                  }}
+                                                />
+                                              ))}
+                                            </Stack>
+                                          </Box>
+                                        );
+                                      })}
+                                    </Stack>
+                                  ) : (
+                                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                      {item.requiredIngredients && item.requiredIngredients.length > 0 && (
+                                        <Box sx={{ mt: 1 }}>
+                                          <Typography variant="caption" color="text.secondary">
+                                            Required Ingredients:
+                                          </Typography>
+                                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                            {item.requiredIngredients.map((ingredient, index) => (
+                                              <Chip
+                                                key={`${item.id}-required-${index}`}
+                                                label={ingredient}
+                                                size="small"
+                                                sx={{ 
+                                                  bgcolor: item.excludedIngredients?.includes(ingredient) ? 'error.light' : 'grey.100',
+                                                  '& .MuiChip-label': {
+                                                    fontSize: '0.75rem',
+                                                    color: item.excludedIngredients?.includes(ingredient) ? 'error.main' : 'text.secondary'
+                                                  }
+                                                }}
+                                              />
+                                            ))}
+                                          </Stack>
+                                        </Box>
+                                      )}
+                                      {item.optionalIngredients && item.optionalIngredients.length > 0 && (
+                                        <Box sx={{ mt: 1 }}>
+                                          <Typography variant="caption" color="text.secondary">
+                                            Optional Ingredients:
+                                          </Typography>
+                                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                            {item.optionalIngredients.map((ingredient, index) => (
+                                              <Chip
+                                                key={`${item.id}-optional-${index}`}
+                                                label={ingredient}
+                                                size="small"
+                                                sx={{ 
+                                                  bgcolor: item.excludedIngredients?.includes(ingredient) ? 'error.light' : 'grey.100',
+                                                  '& .MuiChip-label': {
+                                                    fontSize: '0.75rem',
+                                                    color: item.excludedIngredients?.includes(ingredient) ? 'error.main' : 'text.secondary'
+                                                  }
+                                                }}
+                                              />
+                                            ))}
+                                          </Stack>
+                                        </Box>
+                                      )}
+                                    </Stack>
+                                  )}
+                                </Box>
 
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  mt: 'auto'
+                                }}>
+                                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                                    ${item.price.toFixed(2)}
+                                  </Typography>
                                   <Box sx={{ 
                                     display: 'flex', 
                                     alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    mt: 'auto'
+                                    bgcolor: 'grey.100',
+                                    borderRadius: 1,
+                                    p: 0.5
                                   }}>
-                                    <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                                      ${item.price.toFixed(2)}
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleQuantityChange(item.id, -1, item.customizationId)}
+                                    >
+                                      <RemoveIcon fontSize="small" />
+                                    </IconButton>
+                                    <Typography sx={{ px: 2, minWidth: 20, textAlign: 'center' }}>
+                                      {item.quantity}
                                     </Typography>
-                                    <Box sx={{ 
-                                      display: 'flex', 
-                                      alignItems: 'center',
-                                      bgcolor: 'grey.100',
-                                      borderRadius: 1,
-                                      p: 0.5
-                                    }}>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleQuantityChange(item.id, -1, item.customizationId)}
-                                      >
-                                        <RemoveIcon fontSize="small" />
-                                      </IconButton>
-                                      <Typography sx={{ px: 2, minWidth: 20, textAlign: 'center' }}>
-                                        {item.quantity}
-                                      </Typography>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleQuantityChange(item.id, 1, item.customizationId)}
-                                      >
-                                        <AddIcon fontSize="small" />
-                                      </IconButton>
-                                    </Box>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleQuantityChange(item.id, 1, item.customizationId)}
+                                    >
+                                      <AddIcon fontSize="small" />
+                                    </IconButton>
                                   </Box>
                                 </Box>
                               </Box>
-                            </Paper>
-                          </ListItem>
-                          {index < mergedItems.length - 1 && <Divider />}
-                        </React.Fragment>
-                      ));
-                    })()}
-                  </List>
-                </CardContent>
-              </MotionCard>
-            </Grid>
+                            </Box>
+                          </Paper>
+                        </ListItem>
+                      </List>
+                    </CardContent>
+                  </MotionCard>
+                ))
+              )}
+            </Stack>
+          </Grid>
 
-            <Grid xs={12} md={6}>
-              <MotionCard
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                elevation={2}
-                sx={{ 
-                  borderRadius: 2,
-                  height: 'fit-content'
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Stack spacing={3}>
-                    <Box>
-                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                        Order Summary
-                      </Typography>
-                      <Paper 
-                        variant="outlined" 
-                        sx={{ 
-                          p: 2, 
-                          bgcolor: 'grey.50',
-                          borderRadius: 1
-                        }}
-                      >
-                        <Stack spacing={2}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography>Subtotal</Typography>
-                            <Typography>${calculateTotal().toFixed(2)}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography>Delivery Fee</Typography>
-                            <Typography>${deliveryFee.toFixed(2)}</Typography>
-                          </Box>
-                          <Divider />
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Total</Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                              ${totalWithDelivery.toFixed(2)}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </Paper>
-                    </Box>
-
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="large"
-                      fullWidth
-                      onClick={handleOpenCheckout}
+          <Grid 
+            item 
+            xs={12} 
+            md={4}
+            component="div"
+          >
+            <MotionCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              elevation={2}
+              sx={{ 
+                borderRadius: 2,
+                height: 'fit-content'
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Stack spacing={3}>
+                  <Box>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      Order Summary
+                    </Typography>
+                    <Paper 
+                      variant="outlined" 
                       sx={{ 
-                        py: 1.5,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 'medium'
+                        p: 2, 
+                        bgcolor: 'grey.50',
+                        borderRadius: 1
                       }}
                     >
-                      Proceed to Checkout
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </MotionCard>
-            </Grid>
+                      <Stack spacing={2}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography>Subtotal</Typography>
+                          <Typography>${calculateTotal().toFixed(2)}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography>Delivery Fee</Typography>
+                          <Typography>${deliveryFee.toFixed(2)}</Typography>
+                        </Box>
+                        <Divider />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Total</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                            ${totalWithDelivery.toFixed(2)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Paper>
+                  </Box>
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                    onClick={handleOpenCheckout}
+                    sx={{ 
+                      py: 1.5,
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    Proceed to Checkout
+                  </Button>
+                </Stack>
+              </CardContent>
+            </MotionCard>
           </Grid>
-        </Stack>
+        </Grid>
 
         {/* Checkout Dialog */}
         <Dialog 
@@ -1020,15 +1021,15 @@ export default function CartPage() {
                     </Typography>
                     
                     {/* Required Ingredients */}
-                    {menuItem.requiredIngredients.length > 0 && (
+                    {(menuItem?.requiredIngredients ?? []).length > 0 && (
                       <Box sx={{ mb: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                           Required Ingredients:
                         </Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {menuItem.requiredIngredients.map((ingredient) => (
+                          {(menuItem?.requiredIngredients ?? []).map((ingredient) => (
                             <Chip
-                              key={`${offerItem.itemId}-required-${ingredient}`}
+                              key={`${menuItem.id}-required-${ingredient}`}
                               label={ingredient}
                               color="primary"
                               variant="filled"
@@ -1043,15 +1044,15 @@ export default function CartPage() {
                     )}
 
                     {/* Optional Ingredients */}
-                    {menuItem.optionalIngredients.length > 0 && (
+                    {(menuItem?.optionalIngredients ?? []).length > 0 && (
                       <Box>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                           Optional Ingredients:
                         </Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {menuItem.optionalIngredients.map((ingredient) => (
+                          {(menuItem?.optionalIngredients ?? []).map((ingredient) => (
                             <Chip
-                              key={`${offerItem.itemId}-optional-${ingredient}`}
+                              key={`${menuItem.id}-optional-${ingredient}`}
                               label={ingredient}
                               onClick={() => handleOfferIngredientToggle(offerItem.itemId, ingredient)}
                               color={offerItem.excludedIngredients?.includes(ingredient) ? "error" : "default"}
