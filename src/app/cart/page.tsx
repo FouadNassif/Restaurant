@@ -590,7 +590,10 @@ export default function CartPage() {
                                       {item.offerItems?.map((offerItem) => {
                                         const menuItem = menuItems.find(i => i.id === offerItem.itemId);
                                         if (!menuItem) return null;
-                                        const allIngredients = [...menuItem.requiredIngredients, ...menuItem.optionalIngredients];
+                                        const allIngredients = [
+                                            ...(menuItem.requiredIngredients || []),
+                                            ...(menuItem.optionalIngredients || [])
+                                        ];
                                         return (
                                           <Box key={offerItem.itemId}>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
